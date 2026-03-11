@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scale Lab — Drafting Scale Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f14;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --border: #2a2d3a;
+    --accent: #f0c040;
+    --accent2: #4fd1c5;
+    --accent3: #f87171;
+    --accent4: #a78bfa;
+    --text: #e8eaf0;
+    --text-muted: #8a8fa8;
+    --text-dim: #555a70;
+    --imp: #f0c040;
+    --met: #4fd1c5;
+    --radius: 12px;
+    --radius-lg: 18px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  #app-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(14,15,20,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 20px; height: 56px;
+    overflow-x: auto;
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1rem;
+    color: var(--accent);
+    white-space: nowrap;
+    margin-right: 12px;
+    letter-spacing: -0.02em;
+  }
+  .nav-btn {
+    background: none; border: 1px solid transparent;
+    color: var(--text-muted); font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; padding: 5px 12px; border-radius: 6px;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .nav-btn:hover { color: var(--text); border-color: var(--border); }
+  .nav-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 500; }
+  .nav-progress {
+    margin-left: auto; display: flex; align-items: center; gap: 6px;
+    font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .progress-dots { display: flex; gap: 4px; }
+  .progress-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--border); transition: background 0.3s;
+  }
+  .progress-dot.done { background: var(--accent); }
+  .progress-dot.active { background: var(--accent2); }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 76px 20px 60px; max-width: 900px; margin: 0 auto; }
+  .section.visible { display: block; }
+
+  /* ── HERO ── */
+  #sec-home {
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 100vh;
+    padding: 76px 20px 40px; max-width: 900px; margin: 0 auto;
+    text-align: center;
+  }
+  #sec-home.visible { display: flex; }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(240,192,64,0.12); border: 1px solid rgba(240,192,64,0.3);
+    color: var(--accent); font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; padding: 5px 14px; border-radius: 99px;
+    letter-spacing: 0.08em; margin-bottom: 28px;
+  }
+  .hero-title {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: clamp(2.4rem, 6vw, 4rem); line-height: 1.05;
+    letter-spacing: -0.03em; margin-bottom: 18px;
+  }
+  .hero-title span { color: var(--accent); }
+  .hero-sub {
+    font-size: 1.05rem; color: var(--text-muted); max-width: 540px;
+    line-height: 1.65; margin-bottom: 36px;
+  }
+  .hero-cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; width: 100%; max-width: 640px; margin-bottom: 36px;
+  }
+  .hero-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 14px;
+    cursor: pointer; transition: all 0.2s; text-align: left;
+  }
+  .hero-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .hero-card-icon { font-size: 1.6rem; margin-bottom: 8px; }
+  .hero-card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
+  .hero-card-desc { font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
+  .hero-start-btn {
+    background: var(--accent); color: #000; border: none;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+    padding: 14px 36px; border-radius: 99px; cursor: pointer;
+    transition: all 0.2s; letter-spacing: -0.01em;
+  }
+  .hero-start-btn:hover { transform: scale(1.04); box-shadow: 0 0 24px rgba(240,192,64,0.35); }
+
+  /* ── SECTION HEADERS ── */
+  .sec-header { margin-bottom: 32px; }
+  .sec-tag {
+    font-family: 'DM Mono', monospace; font-size: 0.65rem;
+    color: var(--accent2); letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .sec-title {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: -0.03em;
+    line-height: 1.1; margin-bottom: 10px;
+  }
+  .sec-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; max-width: 600px; }
+
+  /* ── CARDS / PANELS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1rem; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tag {
+    font-family: 'DM Mono', monospace; font-size: 0.6rem;
+    padding: 3px 8px; border-radius: 4px; letter-spacing: 0.06em;
+  }
+  .tag-imp { background: rgba(240,192,64,0.15); color: var(--imp); border: 1px solid rgba(240,192,64,0.3); }
+  .tag-met { background: rgba(79,209,197,0.12); color: var(--met); border: 1px solid rgba(79,209,197,0.3); }
+  .tag-both { background: rgba(167,139,250,0.12); color: var(--accent4); border: 1px solid rgba(167,139,250,0.3); }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media(max-width:520px){ .info-grid { grid-template-columns: 1fr; } }
+
+  .info-panel {
+    background: var(--surface2); border-radius: var(--radius);
+    padding: 16px; border-left: 3px solid var(--border);
+  }
+  .info-panel.imp { border-left-color: var(--imp); }
+  .info-panel.met { border-left-color: var(--met); }
+  .info-panel h4 { font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; }
+  .info-panel p, .info-panel li { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; }
+  .info-panel ul { padding-left: 16px; }
+  .info-panel li { margin-bottom: 3px; }
+
+  /* ── HIGHLIGHT BOX ── */
+  .highlight-box {
+    background: rgba(240,192,64,0.07);
+    border: 1px solid rgba(240,192,64,0.25);
+    border-radius: var(--radius); padding: 16px 18px;
+    margin: 14px 0; font-size: 0.85rem; line-height: 1.65;
+  }
+  .highlight-box strong { color: var(--accent); }
+
+  /* ── VISUAL RULER ── */
+  .ruler-wrap {
+    background: var(--surface2); border-radius: var(--radius);
+    padding: 20px; margin: 16px 0; overflow-x: auto;
+  }
+  .ruler-label {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    color: var(--text-muted); margin-bottom: 10px;
+  }
+  .ruler-svg-wrap { min-width: 520px; }
+
+  /* ── INTERACTIVE SCALE TOOL ── */
+  .scale-controls {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 20px; align-items: center;
+  }
+  .ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+  .ctrl-label {
+    font-family: 'DM Mono', monospace; font-size: 0.62rem;
+    color: var(--text-dim); letter-spacing: 0.06em;
+  }
+  select, input[type="number"], input[type="range"] {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 8px 10px;
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  select:focus, input[type="number"]:focus { border-color: var(--accent2); }
+  select { cursor: pointer; min-width: 180px; }
+  input[type="number"] { width: 100px; }
+  input[type="range"] { width: 180px; accent-color: var(--accent); }
+
+  .scale-result {
+    background: var(--surface2); border-radius: var(--radius);
+    padding: 20px; margin-top: 16px;
+  }
+  .scale-result-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .scale-result-row:last-child { border-bottom: none; }
+  .scale-result-row .label { color: var(--text-muted); font-size: 0.78rem; }
+  .scale-result-row .value {
+    font-family: 'DM Mono', monospace; font-weight: 500;
+    color: var(--accent);
+  }
+
+  /* ── CANVAS DRAWING AREA ── */
+  .canvas-wrap {
+    background: #fff; border-radius: var(--radius);
+    overflow: hidden; position: relative;
+    border: 2px solid var(--border);
+  }
+  canvas { display: block; }
+
+  /* ── QUIZ ── */
+  .quiz-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 28px;
+    margin-bottom: 16px;
+  }
+  .quiz-q {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.05rem; margin-bottom: 6px; line-height: 1.3;
+  }
+  .quiz-context {
+    font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;
+    font-style: italic;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-opt {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+    cursor: pointer; font-size: 0.88rem; transition: all 0.2s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .quiz-opt:hover { border-color: var(--accent2); }
+  .quiz-opt.correct { border-color: var(--met); background: rgba(79,209,197,0.1); }
+  .quiz-opt.wrong { border-color: var(--accent3); background: rgba(248,113,113,0.1); }
+  .quiz-opt.disabled { cursor: default; }
+  .opt-letter {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--border); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .quiz-feedback {
+    margin-top: 14px; padding: 12px 16px;
+    border-radius: var(--radius); font-size: 0.85rem; line-height: 1.55;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(79,209,197,0.1); border: 1px solid rgba(79,209,197,0.3); color: var(--met); }
+  .quiz-feedback.wrong { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3); color: var(--accent3); }
+  .quiz-next-btn {
+    margin-top: 14px; background: var(--accent); color: #000;
+    border: none; font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 0.85rem; padding: 10px 24px; border-radius: 99px;
+    cursor: pointer; display: none; transition: all 0.2s;
+  }
+  .quiz-next-btn.show { display: inline-block; }
+  .quiz-next-btn:hover { transform: scale(1.03); }
+
+  .quiz-score-bar {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px;
+    font-family: 'DM Mono', monospace; font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .score-track {
+    flex: 1; height: 6px; background: var(--border);
+    border-radius: 99px; overflow: hidden;
+  }
+  .score-fill { height: 100%; background: var(--accent); transition: width 0.4s; border-radius: 99px; }
+
+  /* ── PRACTICE DRAW ── */
+  .draw-controls {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 14px; align-items: flex-end;
+  }
+  .btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: 'DM Mono', monospace;
+    font-size: 0.72rem; padding: 8px 14px; border-radius: 8px;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+  }
+  .btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn-primary {
+    background: var(--accent); color: #000; border-color: var(--accent);
+    font-weight: 500;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+
+  /* ── RULER ANIMATION ── */
+  .animated-ruler {
+    position: relative; height: 60px;
+    margin: 20px 0; overflow: hidden;
+  }
+  .ruler-track {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    height: 2px; background: var(--border); width: 100%;
+  }
+  .ruler-marker {
+    position: absolute; top: 50%;
+    width: 2px; background: var(--text-dim);
+    transform: translateY(-50%);
+    transition: left 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .ruler-marker.tall { height: 20px; margin-top: -10px; background: var(--accent); }
+  .ruler-marker.short { height: 10px; margin-top: -5px; }
+
+  /* ── ACCORDION ── */
+  .accordion { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; }
+  .accordion-head {
+    padding: 14px 18px; cursor: pointer; display: flex;
+    justify-content: space-between; align-items: center;
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.9rem;
+    background: var(--surface); transition: background 0.2s; user-select: none;
+  }
+  .accordion-head:hover { background: var(--surface2); }
+  .accordion-arrow { font-size: 0.7rem; transition: transform 0.3s; color: var(--text-dim); }
+  .accordion-body {
+    max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+    background: var(--surface2);
+  }
+  .accordion-body.open { max-height: 600px; }
+  .accordion-body-inner { padding: 16px 18px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+  .accordion.open .accordion-arrow { transform: rotate(180deg); }
+
+  /* ── COMPARE TABLE ── */
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .compare-table th {
+    font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700;
+    padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border);
+  }
+  .compare-table th.imp { color: var(--imp); }
+  .compare-table th.met { color: var(--met); }
+  .compare-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-muted); vertical-align: top; }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── PROGRESS / ACHIEVEMENT ── */
+  .achievement {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 99px; padding: 5px 14px 5px 8px;
+    font-size: 0.75rem; color: var(--accent4);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 18px;
+    font-size: 0.82rem; color: var(--text);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s; z-index: 999;
+    max-width: 280px; pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── FORMULA DISPLAY ── */
+  .formula {
+    font-family: 'DM Mono', monospace;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px; font-size: 0.85rem;
+    margin: 10px 0; color: var(--accent2);
+  }
+  .formula span { color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px; }
+
+  /* ── STEP LIST ── */
+  .step-list { counter-reset: steps; list-style: none; }
+  .step-list li {
+    counter-increment: steps; position: relative;
+    padding: 10px 10px 10px 42px; font-size: 0.85rem;
+    color: var(--text-muted); line-height: 1.6;
+    border-left: 2px solid var(--border); margin-left: 14px;
+    margin-bottom: 4px;
+  }
+  .step-list li::before {
+    content: counter(steps);
+    position: absolute; left: -14px; top: 10px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #000;
+    font-family: 'DM Mono', monospace; font-size: 0.72rem; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── DIVIDER ── */
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  /* ── CALLOUT ── */
+  .callout {
+    display: flex; gap: 12px; padding: 14px 16px;
+    border-radius: var(--radius); margin: 14px 0;
+    font-size: 0.83rem; line-height: 1.6; align-items: flex-start;
+  }
+  .callout.info { background: rgba(79,209,197,0.08); border: 1px solid rgba(79,209,197,0.2); color: var(--text-muted); }
+  .callout.warn { background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.25); color: var(--text-muted); }
+  .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .callout strong { color: var(--text); }
+
+  /* ── SCALE VISUALIZER ── */
+  #scale-vis-canvas { border-radius: 8px; }
+  .vis-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+
+  /* ── COMPLETION ── */
+  .complete-banner {
+    text-align: center; padding: 40px 24px;
+    background: linear-gradient(135deg, rgba(240,192,64,0.08), rgba(79,209,197,0.08));
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+  }
+  .complete-banner h2 {
+    font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800;
+    letter-spacing: -0.03em; margin-bottom: 8px;
+  }
+  .complete-banner p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* Smooth reveal */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section.visible > * { animation: fadeUp 0.35s ease forwards; }
+  .section.visible > *:nth-child(2) { animation-delay: 0.05s; }
+  .section.visible > *:nth-child(3) { animation-delay: 0.1s; }
+  .section.visible > *:nth-child(4) { animation-delay: 0.15s; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="app-nav">
+  <div class="nav-logo">⬛ SCALE LAB</div>
+  <button class="nav-btn active" onclick="showSection('home')">Home</button>
+  <button class="nav-btn" onclick="showSection('what')">1 · What is Scale?</button>
+  <button class="nav-btn" onclick="showSection('why')">2 · Imperial vs Metric</button>
+  <button class="nav-btn" onclick="showSection('tools')">3 · Scale Tools</button>
+  <button class="nav-btn" onclick="showSection('convert')">4 · Calculator</button>
+  <button class="nav-btn" onclick="showSection('visualize')">5 · Visualizer</button>
+  <button class="nav-btn" onclick="showSection('practice')">6 · Drawing</button>
+  <button class="nav-btn" onclick="showSection('quiz')">7 · Quiz</button>
+  <div class="nav-progress">
+    <span id="progress-text">0/6</span>
+    <div class="progress-dots" id="progress-dots"></div>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════ HOME ═══════════════════════════════════ -->
+<section id="sec-home" class="visible">
+  <div class="hero-badge">🏫 Drafting 9–12 · Vancouver BC</div>
+  <h1 class="hero-title">Master<br><span>Engineering Scale</span></h1>
+  <p class="hero-sub">An interactive guide to understanding scale drawing — why we use it, how Imperial and Metric scales work, and how to read and use every type of scale tool.</p>
+  <div class="hero-cards">
+    <div class="hero-card" onclick="showSection('what')">
+      <div class="hero-card-icon">📐</div>
+      <div class="hero-card-title">What is Scale?</div>
+      <div class="hero-card-desc">Ratios, real-world sizes, and why drawings shrink</div>
+    </div>
+    <div class="hero-card" onclick="showSection('why')">
+      <div class="hero-card-icon">🌍</div>
+      <div class="hero-card-title">Imperial vs Metric</div>
+      <div class="hero-card-desc">Why Canada uses both and when to switch</div>
+    </div>
+    <div class="hero-card" onclick="showSection('tools')">
+      <div class="hero-card-icon">📏</div>
+      <div class="hero-card-title">Scale Tools</div>
+      <div class="hero-card-desc">Architect's scale, engineer's scale, metric rule</div>
+    </div>
+    <div class="hero-card" onclick="showSection('convert')">
+      <div class="hero-card-icon">🔢</div>
+      <div class="hero-card-title">Calculator</div>
+      <div class="hero-card-desc">Convert any real measurement to drawing size</div>
+    </div>
+    <div class="hero-card" onclick="showSection('visualize')">
+      <div class="hero-card-icon">🏠</div>
+      <div class="hero-card-title">Visualizer</div>
+      <div class="hero-card-desc">See how scale changes a floor plan in real-time</div>
+    </div>
+    <div class="hero-card" onclick="showSection('quiz')">
+      <div class="hero-card-icon">✅</div>
+      <div class="hero-card-title">Quiz</div>
+      <div class="hero-card-desc">Test your knowledge with 10 real drafting questions</div>
+    </div>
+  </div>
+  <button class="hero-start-btn" onclick="showSection('what')">Start Learning →</button>
+</section>
+
+<!-- ═══════════════════════════════════ 1: WHAT IS SCALE ═══════════════════════ -->
+<section id="sec-what" class="section">
+  <div class="sec-header">
+    <div class="sec-tag">MODULE 01</div>
+    <h2 class="sec-title">What is Scale?</h2>
+    <p class="sec-desc">Real objects are too large to draw at full size. Scale is the mathematical relationship between a drawing and the real thing.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎯 The Big Idea</div>
+    <div class="highlight-box">
+      Scale is a <strong>ratio</strong>. It compares the size of your drawing to the actual size of the object. If a wall is 5 metres long in real life but only 5 centimetres on your drawing, the scale is <strong>1:100</strong> — the drawing is 100× smaller than reality.
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.65;">Think of it like a map. A city map doesn't show every street at actual size — that would be as big as the city itself! Instead, every centimetre on the map might represent 1 kilometre of real ground. That's a scale of 1:100,000.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📖 How to Read a Scale Ratio</div>
+    <div class="formula">
+      1 : 50
+      <span>Drawing size : Real-world size</span>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.65;margin-bottom:12px;">
+      This means: <strong style="color:var(--text);">1 unit on paper = 50 units in real life.</strong><br>
+      The unit can be anything — mm, cm, inches — as long as both sides use the same unit.
+    </p>
+    <div class="info-grid">
+      <div class="info-panel">
+        <h4>🔽 Reduction Scale (most common)</h4>
+        <p>The drawing is <em>smaller</em> than real life.<br>Example: 1:50, 1:100, ¼" = 1'<br>Used for buildings, site plans, maps.</p>
+      </div>
+      <div class="info-panel">
+        <h4>🔼 Enlargement Scale</h4>
+        <p>The drawing is <em>bigger</em> than real life.<br>Example: 5:1, 10:1<br>Used for tiny parts like circuit boards or mechanical components.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📐 The Scale Formula</div>
+    <div class="formula">
+      Drawing Size = Real Size ÷ Scale Factor
+      <span>OR: Real Size = Drawing Size × Scale Factor</span>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;line-height:1.65;"><strong style="color:var(--text);">Example:</strong> A room is 6 metres wide. You're drawing it at 1:50.</p>
+    <ol class="step-list">
+      <li>Convert to the same units: 6 m = 6000 mm</li>
+      <li>Divide by scale factor: 6000 ÷ 50 = 120 mm</li>
+      <li>So the room is drawn <strong style="color:var(--accent);">120 mm wide</strong> on your paper</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🧮 Try It — Interactive Scale Calculator</div>
+    <div class="scale-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-label">REAL SIZE</div>
+        <input type="number" id="basic-real" value="6" min="0.01" step="0.1" oninput="calcBasic()">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">UNIT</div>
+        <select id="basic-unit" onchange="calcBasic()">
+          <option>metres</option>
+          <option>centimetres</option>
+          <option>millimetres</option>
+          <option>feet</option>
+          <option>inches</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">SCALE</div>
+        <select id="basic-scale" onchange="calcBasic()">
+          <option value="10">1:10</option>
+          <option value="20">1:20</option>
+          <option value="25">1:25</option>
+          <option value="50" selected>1:50</option>
+          <option value="100">1:100</option>
+          <option value="200">1:200</option>
+          <option value="500">1:500</option>
+        </select>
+      </div>
+    </div>
+    <div class="scale-result" id="basic-result">
+      <div class="scale-result-row"><span class="label">Real size</span><span class="value" id="br-real">—</span></div>
+      <div class="scale-result-row"><span class="label">Scale factor</span><span class="value" id="br-factor">—</span></div>
+      <div class="scale-result-row"><span class="label">Drawing size (mm)</span><span class="value" id="br-draw">—</span></div>
+      <div class="scale-result-row"><span class="label">Drawing size (cm)</span><span class="value" id="br-drawcm">—</span></div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+    <button class="btn btn-primary" onclick="completeSection('what'); showSection('why')">Next: Imperial vs Metric →</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ 2: WHY IMPERIAL & METRIC ═══════════════ -->
+<section id="sec-why" class="section">
+  <div class="sec-header">
+    <div class="sec-tag">MODULE 02</div>
+    <h2 class="sec-title">Imperial vs Metric</h2>
+    <p class="sec-desc">Why does Canada use two measurement systems? And which one do you use when drafting? Let's find out.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌍 A Quick History</div>
+    <div class="info-grid">
+      <div class="info-panel imp">
+        <h4 style="color:var(--imp)">Imperial System 🇺🇸🇬🇧</h4>
+        <ul>
+          <li>Developed in Britain, centuries old</li>
+          <li>Uses: inches, feet, yards, miles</li>
+          <li>Also: pounds, ounces, gallons</li>
+          <li>USA never switched — still dominant there</li>
+          <li>Canada used it exclusively until the 1970s</li>
+        </ul>
+      </div>
+      <div class="info-panel met">
+        <h4 style="color:var(--met)">Metric System 🌍</h4>
+        <ul>
+          <li>France, 1790s — based on powers of 10</li>
+          <li>Uses: mm, cm, m, km</li>
+          <li>Also: grams, litres, Celsius</li>
+          <li>Canada officially switched in 1970</li>
+          <li>Used by 95% of the world's population</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout info" style="margin-top:14px;">
+      <div class="callout-icon">🇨🇦</div>
+      <div><strong>Canada's situation:</strong> Canada officially uses metric, but construction and real estate still heavily use imperial (feet/inches). As a drafter in BC, you must be fluent in <em>both</em>.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📏 Unit Conversions You Must Know</div>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Imperial</th>
+          <th>=</th>
+          <th>Metric</th>
+          <th>Common Use</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1 inch (in)</td><td>=</td><td>25.4 mm</td><td>Small parts, dimensions</td></tr>
+        <tr><td>1 foot (ft or ')</td><td>=</td><td>304.8 mm = 0.3048 m</td><td>Room sizes, building heights</td></tr>
+        <tr><td>1 yard (yd)</td><td>=</td><td>914.4 mm ≈ 0.914 m</td><td>Fabric, sports fields</td></tr>
+        <tr><td>1 mile</td><td>=</td><td>1.609 km</td><td>Road distances</td></tr>
+        <tr><td>12 inches</td><td>=</td><td>1 foot</td><td>Always!</td></tr>
+        <tr><td>3 feet</td><td>=</td><td>1 yard</td><td>Always!</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn" style="margin-top:12px;">
+      <div class="callout-icon">⚠️</div>
+      <div><strong>Key difference:</strong> Metric is base-10 (10 mm = 1 cm, 100 cm = 1 m). Imperial has <em>no consistent base</em> (12 inches = 1 foot, 3 feet = 1 yard, 1760 yards = 1 mile). This is why metric is easier to calculate with!</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏗️ When Do Drafters Use Each?</div>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Drawing Type</th>
+          <th class="imp">Imperial Common Scales</th>
+          <th class="met">Metric Common Scales</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Floor plans (residential)</td><td>¼" = 1'-0" or ⅛" = 1'-0"</td><td>1:50 or 1:100</td></tr>
+        <tr><td>Site plans / lot</td><td>1" = 20', 1" = 50'</td><td>1:200, 1:500</td></tr>
+        <tr><td>Detail drawings</td><td>1" = 1'-0", 3" = 1'-0"</td><td>1:5, 1:10, 1:20</td></tr>
+        <tr><td>Mechanical parts</td><td>Full size or 1:2</td><td>1:1, 2:1, 5:1</td></tr>
+        <tr><td>Civil / roads</td><td>1" = 100', 1" = 200'</td><td>1:1000, 1:2000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔄 Imperial Scale Notation Explained</div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;line-height:1.65;">Imperial architectural scales look different from metric ratios. Here's how to decode them:</p>
+    <div class="formula">
+      ¼" = 1'-0"
+      <span>Means: ¼ inch on the drawing = 1 foot (1'-0") in real life</span>
+    </div>
+    <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.65;margin-bottom:10px;">To convert this to a ratio: 1 foot = 12 inches, so 1'-0" = 12". Then ¼" to 12" is a ratio of 1:48 (since 12 ÷ 0.25 = 48). So <strong style="color:var(--text);">¼" = 1'-0" is almost exactly 1:50</strong>.</p>
+
+    <div id="imp-accordion">
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-head">Common Imperial Scales & Their Ratio Equivalents <span class="accordion-arrow">▼</span></div>
+        <div class="accordion-body">
+          <div class="accordion-body-inner">
+            <table class="compare-table">
+              <tr><th>Imperial Notation</th><th>Ratio Equivalent</th><th>Use</th></tr>
+              <tr><td>3" = 1'-0"</td><td>≈ 1:4</td><td>Large details</td></tr>
+              <tr><td>1½" = 1'-0"</td><td>≈ 1:8</td><td>Detailed drawings</td></tr>
+              <tr><td>1" = 1'-0"</td><td>1:12</td><td>Details</td></tr>
+              <tr><td>¾" = 1'-0"</td><td>1:16</td><td>Larger details</td></tr>
+              <tr><td>½" = 1'-0"</td><td>1:24</td><td>Room details</td></tr>
+              <tr><td>¼" = 1'-0"</td><td>1:48 ≈ 1:50</td><td>Floor plans</td></tr>
+              <tr><td>⅛" = 1'-0"</td><td>1:96 ≈ 1:100</td><td>Building plans</td></tr>
+              <tr><td>1/16" = 1'-0"</td><td>1:192 ≈ 1:200</td><td>Small site plans</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+    <button class="btn btn-primary" onclick="completeSection('why'); showSection('tools')">Next: Scale Tools →</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ 3: SCALE TOOLS ══════════════════════════ -->
+<section id="sec-tools" class="section">
+  <div class="sec-header">
+    <div class="sec-tag">MODULE 03</div>
+    <h2 class="sec-title">Scale Tools</h2>
+    <p class="sec-desc">Physical scale rules look like triangular prisms with 6 flat faces — each face has a different scale printed on it. Here's how to read them.</p>
+  </div>
+
+  <!-- Architect's Scale -->
+  <div class="card">
+    <div class="card-title">📐 Architect's Scale <span class="tag tag-imp">IMPERIAL</span></div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;line-height:1.65;">
+      The architect's scale is a triangular ruler with <strong style="color:var(--text);">11 different scales</strong> on its 6 edges. It's used for architectural drawings measured in feet and inches.
+    </p>
+    <div class="callout info">
+      <div class="callout-icon">👀</div>
+      <div><strong>Key feature:</strong> Each end of a scale reads in opposite directions. The numbers go 0→large on one end and large→0 on the other, sharing the same edge. Always find the "0" mark for your scale first!</div>
+    </div>
+
+    <div id="arch-ruler-vis" class="ruler-wrap" style="margin-top:16px;">
+      <div class="ruler-label">Interactive Architect's Scale — ¼" = 1'-0" (hover over marks)</div>
+      <div class="ruler-svg-wrap">
+        <svg id="arch-svg" width="560" height="80" style="display:block;"></svg>
+      </div>
+    </div>
+
+    <div class="accordion" onclick="toggleAccordion(this)" style="margin-top:14px;">
+      <div class="accordion-head">How to Read the Architect's Scale — Step by Step <span class="accordion-arrow">▼</span></div>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">
+          <ol class="step-list">
+            <li>Identify the scale you need (e.g., ¼" = 1'-0")</li>
+            <li>Find that scale printed on the ruler edge</li>
+            <li>Locate the <strong>zero (0) mark</strong> — this is your starting point</li>
+            <li>The numbered marks show feet (1, 2, 3…). Each space between numbers = 1 foot at that scale</li>
+            <li>The small divided section beyond the "0" shows inches (subdivided into 12 parts)</li>
+            <li>Place the 0 at one end of your line and read the feet, then add any inch fractions</li>
+          </ol>
+          <div class="callout warn" style="margin-top:12px;">
+            <div class="callout-icon">⚠️</div>
+            <div><strong>Common mistake:</strong> Reading the wrong scale! Each edge has TWO scales. The smaller-numbered scale reads left-to-right; the larger reads right-to-left. Always confirm which direction your "0" is.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Engineer's Scale -->
+  <div class="card">
+    <div class="card-title">📏 Engineer's Scale <span class="tag tag-imp">IMPERIAL CIVIL</span></div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;line-height:1.65;">
+      The civil engineer's scale uses <strong style="color:var(--text);">ratio-based divisions</strong>: 10, 20, 30, 40, 50, and 60. These represent "1 inch = X feet" and are used for site plans, maps, and civil drawings.
+    </p>
+    <div class="info-grid">
+      <div class="info-panel imp">
+        <h4>Scale "10" means…</h4>
+        <p>1 inch = 10 feet. Each numbered division = 1 foot. Used for large detail drawings.</p>
+      </div>
+      <div class="info-panel imp">
+        <h4>Scale "50" means…</h4>
+        <p>1 inch = 50 feet. Used for medium-sized site plans and subdivision layouts.</p>
+      </div>
+    </div>
+    <div class="callout info" style="margin-top:12px;">
+      <div class="callout-icon">💡</div>
+      <div><strong>Easy trick:</strong> The number on the engineer's scale IS the scale factor. Scale "40" = 1:480 (40 × 12). Just multiply the reading by the scale number to get feet.</div>
+    </div>
+  </div>
+
+  <!-- Metric Scale -->
+  <div class="card">
+    <div class="card-title">📏 Metric Scale Rule <span class="tag tag-met">METRIC</span></div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;line-height:1.65;">
+      The metric scale rule (also triangular) has scales like <strong style="color:var(--text);">1:20, 1:25, 1:50, 1:75, 1:100, 1:125</strong>. The divisions are already in millimetres — much easier to calculate!
+    </p>
+    <div class="info-grid">
+      <div class="info-panel met">
+        <h4>Reading 1:50</h4>
+        <p>Each 1mm on the ruler = 50mm in reality. So if you measure 40mm on a 1:50 drawing, the real size is 40 × 50 = 2000mm = 2 metres.</p>
+      </div>
+      <div class="info-panel met">
+        <h4>Reading 1:100</h4>
+        <p>Each 1mm = 100mm = 0.1m. Measure 55mm on a 1:100 plan? Real size = 55 × 100 = 5500mm = 5.5m.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Digital/CAD -->
+  <div class="card">
+    <div class="card-title">💻 Digital Scale in CAD <span class="tag tag-both">CAD / DIGITAL</span></div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;line-height:1.65;">In CAD software (AutoCAD, Revit, SketchUp), you always draw at <strong style="color:var(--text);">1:1 (full size)</strong>. Scale is only applied when you set up your <em>viewport</em> or <em>print layout</em>.</p>
+    <div class="info-grid">
+      <div class="info-panel">
+        <h4>Model Space</h4>
+        <p>Always real-world size. A 6m wall is drawn as 6000mm. You never shrink objects in model space.</p>
+      </div>
+      <div class="info-panel">
+        <h4>Paper Space / Layout</h4>
+        <p>This is where you set your scale. A viewport set to 1:50 will show your 6m wall as 120mm on the printed sheet.</p>
+      </div>
+    </div>
+    <div class="callout warn" style="margin-top:12px;">
+      <div class="callout-icon">⚠️</div>
+      <div><strong>Important:</strong> Even in CAD, you must understand scale to choose the right viewport scale, annotate with correct text heights, and specify dimension scales correctly.</div>
+    </div>
+  </div>
+
+  <!-- Interactive ruler demo -->
+  <div class="card">
+    <div class="card-title">🎮 Interactive Scale Rule Demo</div>
+    <div class="scale-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-label">RULE TYPE</div>
+        <select id="rule-type" onchange="drawRulerDemo()">
+          <option value="arch">Architect's Scale (Imperial)</option>
+          <option value="eng">Engineer's Scale (Imperial Civil)</option>
+          <option value="met">Metric Scale Rule</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">SCALE</div>
+        <select id="rule-scale" onchange="drawRulerDemo()">
+          <option value="48">¼" = 1'-0" (Arch)</option>
+          <option value="96">⅛" = 1'-0" (Arch)</option>
+          <option value="50">1:50 (Metric)</option>
+          <option value="100">1:100 (Metric)</option>
+        </select>
+      </div>
+    </div>
+    <div class="ruler-wrap">
+      <div class="ruler-svg-wrap">
+        <canvas id="ruler-demo-canvas" width="560" height="90" style="display:block;background:#f8f4e8;border-radius:6px;"></canvas>
+      </div>
+    </div>
+    <p style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;font-family:'DM Mono',monospace;">^ A simulated scale rule face — hover or click to read measurements</p>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+    <button class="btn btn-primary" onclick="completeSection('tools'); showSection('convert')">Next: Calculator →</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ 4: CALCULATOR ═══════════════════════════ -->
+<section id="sec-convert" class="section">
+  <div class="sec-header">
+    <div class="sec-tag">MODULE 04</div>
+    <h2 class="sec-title">Scale Calculator</h2>
+    <p class="sec-desc">Use this tool to convert between real-world sizes and drawing sizes for any scale. Try both directions.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔢 Full Scale Converter</div>
+    <div class="scale-controls" style="flex-wrap:wrap;gap:14px;">
+      <div class="ctrl-group">
+        <div class="ctrl-label">SYSTEM</div>
+        <select id="sys" onchange="updateScaleOptions(); calcFull()">
+          <option value="metric">Metric</option>
+          <option value="imperial">Imperial (Architectural)</option>
+          <option value="civil">Imperial (Civil/Engineering)</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">SCALE</div>
+        <select id="full-scale" onchange="calcFull()">
+          <option value="50">1:50</option>
+          <option value="100">1:100</option>
+          <option value="200">1:200</option>
+          <option value="20">1:20</option>
+          <option value="25">1:25</option>
+        </select>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="info-grid" style="gap:16px;">
+      <div>
+        <p style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text-dim);margin-bottom:8px;letter-spacing:.06em;">REAL SIZE → DRAWING SIZE</p>
+        <div class="scale-controls" style="margin-bottom:10px;">
+          <div class="ctrl-group">
+            <div class="ctrl-label">REAL SIZE</div>
+            <input type="number" id="real-in" value="5" min="0" step="0.1" oninput="calcFull()">
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-label">UNIT</div>
+            <select id="real-unit" onchange="calcFull()">
+              <option>m</option><option>mm</option><option>cm</option><option>ft</option><option>in</option>
+            </select>
+          </div>
+        </div>
+        <div class="scale-result">
+          <div class="scale-result-row"><span class="label">Drawing size (mm)</span><span class="value" id="f-draw-mm">—</span></div>
+          <div class="scale-result-row"><span class="label">Drawing size (cm)</span><span class="value" id="f-draw-cm">—</span></div>
+          <div class="scale-result-row"><span class="label">Drawing size (inches)</span><span class="value" id="f-draw-in">—</span></div>
+        </div>
+      </div>
+      <div>
+        <p style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text-dim);margin-bottom:8px;letter-spacing:.06em;">DRAWING SIZE → REAL SIZE</p>
+        <div class="scale-controls" style="margin-bottom:10px;">
+          <div class="ctrl-group">
+            <div class="ctrl-label">DRAWING SIZE</div>
+            <input type="number" id="draw-in" value="100" min="0" step="0.1" oninput="calcFull()">
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-label">UNIT</div>
+            <select id="draw-unit" onchange="calcFull()">
+              <option>mm</option><option>cm</option><option>in</option>
+            </select>
+          </div>
+        </div>
+        <div class="scale-result">
+          <div class="scale-result-row"><span class="label">Real size (m)</span><span class="value" id="f-real-m">—</span></div>
+          <div class="scale-result-row"><span class="label">Real size (mm)</span><span class="value" id="f-real-mm">—</span></div>
+          <div class="scale-result-row"><span class="label">Real size (ft + in)</span><span class="value" id="f-real-ft">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 Scale Comparison Chart</div>
+    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:14px;">How does a 10-metre wall appear at different scales?</p>
+    <div id="scale-bar-vis" style="padding: 10px 0;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔁 Imperial ↔ Metric Unit Converter</div>
+    <div class="scale-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-label">VALUE</div>
+        <input type="number" id="unit-val" value="1" min="0" step="0.001" oninput="calcUnits()">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">FROM</div>
+        <select id="unit-from" onchange="calcUnits()">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="m">m</option>
+          <option value="in">inches</option>
+          <option value="ft">feet</option>
+        </select>
+      </div>
+    </div>
+    <div class="scale-result" id="unit-result">
+      <div class="scale-result-row"><span class="label">Millimetres (mm)</span><span class="value" id="u-mm">—</span></div>
+      <div class="scale-result-row"><span class="label">Centimetres (cm)</span><span class="value" id="u-cm">—</span></div>
+      <div class="scale-result-row"><span class="label">Metres (m)</span><span class="value" id="u-m">—</span></div>
+      <div class="scale-result-row"><span class="label">Inches (in)</span><span class="value" id="u-in">—</span></div>
+      <div class="scale-result-row"><span class="label">Feet (ft)</span><span class="value" id="u-ft">—</span></div>
+      <div class="scale-result-row"><span class="label">Feet & Inches</span><span class="value" id="u-ftIn">—</span></div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+    <button class="btn btn-primary" onclick="completeSection('convert'); showSection('visualize')">Next: Visualizer →</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ 5: VISUALIZER ═══════════════════════════ -->
+<section id="sec-visualize" class="section">
+  <div class="sec-header">
+    <div class="sec-tag">MODULE 05</div>
+    <h2 class="sec-title">Scale Visualizer</h2>
+    <p class="sec-desc">See how the same floor plan looks at different scales — drag the slider and watch the drawing change in real-time.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏠 Floor Plan at Different Scales</div>
+    <div class="vis-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-label">SCALE</div>
+        <select id="vis-scale" onchange="drawFloorPlan()">
+          <option value="20">1:20 — Very large detail</option>
+          <option value="50" selected>1:50 — Standard floor plan</option>
+          <option value="100">1:100 — Building plan</option>
+          <option value="200">1:200 — Site overview</option>
+          <option value="500">1:500 — Block plan</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">DISPLAY MODE</div>
+        <select id="vis-mode" onchange="drawFloorPlan()">
+          <option value="metric">Metric labels (mm/m)</option>
+          <option value="imperial">Imperial labels (ft/in)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" style="margin-bottom:12px;">
+      <canvas id="floor-canvas" width="840" height="420" style="max-width:100%;"></canvas>
+    </div>
+    <div id="vis-info" style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:16px;padding:8px 0;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📐 Scale Comparison — Same Object, Different Scales</div>
+    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:14px;">This shows a <strong style="color:var(--text);">12m × 8m building footprint</strong> drawn at 5 different scales, all on the same page so you can see the size difference.</p>
+    <div class="canvas-wrap">
+      <canvas id="compare-canvas" width="840" height="300" style="max-width:100%;"></canvas>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+    <button class="btn btn-primary" onclick="completeSection('visualize'); showSection('practice')">Next: Drawing Practice →</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ 6: PRACTICE DRAWING ═════════════════════ -->
+<section id="sec-practice" class="section">
+  <div class="sec-header">
+    <div class="sec-tag">MODULE 06</div>
+    <h2 class="sec-title">Drawing Practice</h2>
+    <p class="sec-desc">Practice measuring and drawing scaled lines on screen. Enter real-world measurements and draw them at the correct scale.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✏️ Scale Drawing Board</div>
+    <div class="draw-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-label">SCALE</div>
+        <select id="draw-scale" onchange="updateDrawInfo()">
+          <option value="50">1:50</option>
+          <option value="100">1:100</option>
+          <option value="200">1:200</option>
+          <option value="48">¼" = 1'-0"</option>
+          <option value="96">⅛" = 1'-0"</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">REAL LENGTH (mm)</div>
+        <input type="number" id="draw-len" value="3000" min="1" oninput="updateDrawInfo()">
+      </div>
+      <button class="btn btn-primary" onclick="addScaleLine()">Add Line</button>
+      <button class="btn" onclick="clearDrawBoard()">Clear</button>
+    </div>
+    <div id="draw-info" style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--accent2);margin-bottom:10px;min-height:20px;"></div>
+    <div class="canvas-wrap" style="cursor:crosshair;">
+      <canvas id="draw-canvas" width="820" height="380" style="max-width:100%;background:#fff;"></canvas>
+    </div>
+    <p style="font-size:0.75rem;color:var(--text-dim);margin-top:8px;font-family:'DM Mono',monospace;">Click and drag on the canvas to draw a scaled line, or use the controls above.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Practice Exercises</div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;line-height:1.65;">Complete these exercises using the drawing board above or on paper with a scale rule.</p>
+    <div id="exercises"></div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+    <button class="btn btn-primary" onclick="completeSection('practice'); showSection('quiz')">Ready for the Quiz →</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ 7: QUIZ ══════════════════════════════════ -->
+<section id="sec-quiz" class="section">
+  <div class="sec-header">
+    <div class="sec-tag">MODULE 07</div>
+    <h2 class="sec-title">Knowledge Quiz</h2>
+    <p class="sec-desc">Test what you've learned! 10 questions covering scale concepts, unit conversion, and reading scale tools.</p>
+  </div>
+
+  <div class="quiz-score-bar">
+    <span id="quiz-q-label">Question 1 of 10</span>
+    <div class="score-track"><div class="score-fill" id="quiz-progress" style="width:0%"></div></div>
+    <span id="quiz-score-label">Score: 0</span>
+  </div>
+
+  <div id="quiz-container"></div>
+
+  <div id="quiz-complete" style="display:none;">
+    <div class="complete-banner">
+      <h2>🎉 Quiz Complete!</h2>
+      <p id="quiz-final-score" style="font-size:1.1rem;margin-top:8px;"></p>
+      <p style="margin-top:6px;">Review the modules above to strengthen any weak areas.</p>
+    </div>
+    <button class="btn btn-primary" onclick="restartQuiz()">Try Again</button>
+    <button class="btn" onclick="showSection('home')" style="margin-left:8px;">Back to Home</button>
+  </div>
+</section>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const sections = ['home','what','why','tools','convert','visualize','practice','quiz'];
+const learnable = ['what','why','tools','convert','visualize','practice'];
+const completed = new Set();
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function showSection(id) {
+  sections.forEach(s => {
+    document.getElementById('sec-'+s).classList.remove('visible');
+  });
+  document.getElementById('sec-'+id).classList.add('visible');
+  document.querySelectorAll('.nav-btn').forEach((b,i) => {
+    b.classList.toggle('active', sections[i] === id);
+  });
+  updateProgressDots();
+  window.scrollTo(0,0);
+  if(id === 'visualize') setTimeout(()=>{ drawFloorPlan(); drawCompare(); },100);
+  if(id === 'practice') setTimeout(()=>{ initDrawBoard(); renderExercises(); },100);
+  if(id === 'quiz') setTimeout(()=>{ initQuiz(); },100);
+  if(id === 'convert') setTimeout(()=>{ calcFull(); calcUnits(); drawScaleBars(); },100);
+  if(id === 'what') setTimeout(()=>{ calcBasic(); },100);
+}
+
+function completeSection(id) {
+  if(!completed.has(id)){
+    completed.add(id);
+    showToast('✅ Module complete! Keep going.');
+  }
+  updateProgressDots();
+}
+
+function updateProgressDots() {
+  const container = document.getElementById('progress-dots');
+  container.innerHTML = '';
+  learnable.forEach(id => {
+    const d = document.createElement('div');
+    d.className = 'progress-dot' + (completed.has(id) ? ' done' : '');
+    container.appendChild(d);
+  });
+  document.getElementById('progress-text').textContent = completed.size+'/'+learnable.length;
+}
+
+function toggleAccordion(el) {
+  const body = el.querySelector('.accordion-body');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  el.classList.toggle('open', !isOpen);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE 1: BASIC CALCULATOR
+// ═══════════════════════════════════════════════════════════
+function calcBasic() {
+  const real = parseFloat(document.getElementById('basic-real').value) || 0;
+  const unit = document.getElementById('basic-unit').value;
+  const scale = parseFloat(document.getElementById('basic-scale').value);
+
+  // Convert to mm
+  const toMm = { metres: 1000, centimetres: 10, millimetres: 1, feet: 304.8, inches: 25.4 };
+  const realMm = real * (toMm[unit] || 1);
+  const drawMm = realMm / scale;
+
+  document.getElementById('br-real').textContent = real + ' ' + unit;
+  document.getElementById('br-factor').textContent = '1:' + scale;
+  document.getElementById('br-draw').textContent = drawMm.toFixed(2) + ' mm';
+  document.getElementById('br-drawcm').textContent = (drawMm/10).toFixed(3) + ' cm';
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE 3: RULER DEMO
+// ═══════════════════════════════════════════════════════════
+function drawRulerDemo() {
+  const canvas = document.getElementById('ruler-demo-canvas');
+  const ctx = canvas.getContext('2d');
+  const type = document.getElementById('rule-type').value;
+  const w = canvas.width, h = canvas.height;
+
+  ctx.clearRect(0,0,w,h);
+
+  // Update scale options
+  const scaleEl = document.getElementById('rule-scale');
+  if(type === 'met') {
+    scaleEl.innerHTML = '<option value="50">1:50</option><option value="100">1:100</option><option value="20">1:20</option><option value="25">1:25</option>';
+  } else if(type === 'arch') {
+    scaleEl.innerHTML = '<option value="48">¼" = 1\'−0" (≈1:48)</option><option value="96">⅛" = 1\'−0" (≈1:96)</option><option value="24">½" = 1\'−0" (≈1:24)</option><option value="12">1" = 1\'−0" (1:12)</option>';
+  } else {
+    scaleEl.innerHTML = '<option value="120">1"=10\' (scale 10)</option><option value="240">1"=20\' (scale 20)</option><option value="600">1"=50\' (scale 50)</option>';
+  }
+
+  const scale = parseInt(scaleEl.value);
+  drawRulerCanvas(ctx, type, scale, w, h);
+}
+
+function drawRulerCanvas(ctx, type, scale, w, h) {
+  const padding = 30;
+  const rulerW = w - padding*2;
+  const rulerH = 40;
+  const y0 = (h - rulerH) / 2 + 10;
+
+  // Ruler body
+  ctx.fillStyle = '#f5f0dc';
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(padding, y0, rulerW, rulerH, 3);
+  ctx.fill(); ctx.stroke();
+
+  // Draw ticks
+  ctx.fillStyle = '#222';
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'center';
+
+  if(type === 'met') {
+    // Metric: scale is the ratio, 1 unit on ruler = scale mm real
+    // We'll show 0 to ~500mm real in the ruler width
+    const maxReal = scale * (rulerW / 25.4 * 1); // rough: ruler in mm
+    const numDivisions = (scale <= 50) ? 10 : 8;
+    const realPerDiv = Math.ceil(scale * 10 / numDivisions / 10) * 10;
+    const numTicks = Math.floor(rulerW / (realPerDiv / scale));
+
+    for(let i = 0; i <= numTicks; i++) {
+      const realMm = i * realPerDiv;
+      const px = padding + (realMm / scale);
+      if(px > padding + rulerW - 2) break;
+      const isMajor = (i % 5 === 0);
+      const tickH = isMajor ? rulerH * 0.7 : rulerH * 0.35;
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = isMajor ? 1.5 : 0.8;
+      ctx.beginPath();
+      ctx.moveTo(px, y0); ctx.lineTo(px, y0 + tickH);
+      ctx.stroke();
+      if(isMajor) {
+        ctx.fillStyle = '#222';
+        const label = realMm >= 1000 ? (realMm/1000)+'m' : realMm+'mm';
+        ctx.fillText(label, px, y0 + rulerH + 12);
+      }
+    }
+    ctx.fillStyle = '#666';
+    ctx.font = '8px DM Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Scale 1:'+scale, padding+4, y0+rulerH-4);
+
+  } else if(type === 'arch') {
+    // Architect: each foot = 12*25.4/scale mm on ruler
+    const mmPerFoot = 12 * 25.4 / scale * (w/560);
+    const maxFeet = Math.floor((rulerW - mmPerFoot) / mmPerFoot);
+    // Inch section before 0
+    const mmPerInch = mmPerFoot / 12;
+
+    // Draw inch section (left of 0)
+    ctx.fillStyle = '#e8e0c0';
+    ctx.fillRect(padding, y0+1, mmPerFoot-1, rulerH-2);
+
+    for(let i=0; i<=12; i++) {
+      const px = padding + i*mmPerInch;
+      const tickH = (i===0||i===12) ? rulerH*0.7 : i%3===0 ? rulerH*0.5 : rulerH*0.3;
+      ctx.strokeStyle = '#555'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(px, y0+rulerH); ctx.lineTo(px, y0+rulerH-tickH); ctx.stroke();
+    }
+    ctx.fillStyle = '#777'; ctx.font = '7px DM Mono, monospace'; ctx.textAlign='center';
+    ctx.fillText('inches', padding + mmPerFoot/2, y0+8);
+
+    // Main feet divisions
+    for(let f=0; f<=maxFeet; f++) {
+      const px = padding + mmPerFoot + f*mmPerFoot;
+      if(px > padding+rulerW-2) break;
+      ctx.strokeStyle = '#333'; ctx.lineWidth = f===0?2:1;
+      ctx.beginPath(); ctx.moveTo(px, y0); ctx.lineTo(px, y0+rulerH*0.8); ctx.stroke();
+      ctx.fillStyle = '#222'; ctx.font = f===0?'bold 10px DM Mono,monospace':'9px DM Mono,monospace';
+      ctx.textAlign='center';
+      ctx.fillText(f===0?'0':f, px, y0+rulerH+12);
+    }
+    ctx.fillStyle = '#666'; ctx.font = '7px DM Mono,monospace'; ctx.textAlign='left';
+    const sLabel = scale===48?"¼\"=1'-0\"": scale===96?"⅛\"=1'-0\"": scale===24?"½\"=1'-0\"": "1\"=1'-0\"";
+    ctx.fillText(sLabel, padding+4, y0+rulerH-4);
+
+  } else {
+    // Engineer: 1 inch = scale feet
+    const pxPerInch = 96; // 96px = 1 inch
+    const feetPerInch = scale/12;
+    const numInches = Math.floor(rulerW / pxPerInch);
+    for(let i=0; i<=numInches; i++) {
+      const px = padding + i*pxPerInch;
+      if(px > padding+rulerW) break;
+      ctx.strokeStyle='#333'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(px,y0); ctx.lineTo(px,y0+rulerH); ctx.stroke();
+      // Sub-ticks
+      for(let j=1;j<10;j++){
+        const spx = px+j*(pxPerInch/10);
+        const sh = j===5?rulerH*0.6:rulerH*0.3;
+        ctx.strokeStyle='#666'; ctx.lineWidth=0.7;
+        ctx.beginPath(); ctx.moveTo(spx,y0+rulerH); ctx.lineTo(spx,y0+rulerH-sh); ctx.stroke();
+      }
+      ctx.fillStyle='#222'; ctx.font='9px DM Mono,monospace'; ctx.textAlign='center';
+      ctx.fillText(i===0?'0':(i*feetPerInch)+"'", px, y0-4);
+    }
+    ctx.fillStyle='#666'; ctx.font='7px DM Mono,monospace'; ctx.textAlign='left';
+    ctx.fillText('Eng. Scale: 1"='+(scale/12)+"'", padding+4, y0+rulerH-4);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE 4: FULL CALCULATOR
+// ═══════════════════════════════════════════════════════════
+const scaleOptions = {
+  metric: [{v:20,l:'1:20'},{v:25,l:'1:25'},{v:50,l:'1:50'},{v:75,l:'1:75'},{v:100,l:'1:100'},{v:125,l:'1:125'},{v:200,l:'1:200'},{v:500,l:'1:500'}],
+  imperial: [{v:4,l:'3"=1\'-0"'},{v:8,l:'1½"=1\'-0"'},{v:12,l:'1"=1\'-0"'},{v:16,l:'¾"=1\'-0"'},{v:24,l:'½"=1\'-0"'},{v:48,l:'¼"=1\'-0"'},{v:96,l:'⅛"=1\'-0"'}],
+  civil: [{v:120,l:'1"=10\''},{v:240,l:'1"=20\''},{v:360,l:'1"=30\''},{v:480,l:'1"=40\''},{v:600,l:'1"=50\''},{v:720,l:'1"=60\''}]
+};
+
+function updateScaleOptions() {
+  const sys = document.getElementById('sys').value;
+  const el = document.getElementById('full-scale');
+  el.innerHTML = scaleOptions[sys].map(o=>`<option value="${o.v}">${o.l}</option>`).join('');
+  calcFull();
+}
+
+function toMm(val, unit) {
+  const m = {m:1000,mm:1,cm:10,ft:304.8,in:25.4};
+  return val*(m[unit]||1);
+}
+
+function mmToFtIn(mm) {
+  const totalIn = mm/25.4;
+  const ft = Math.floor(totalIn/12);
+  const inches = (totalIn%12).toFixed(2);
+  return ft+"'-"+inches+'"';
+}
+
+function calcFull() {
+  const scale = parseFloat(document.getElementById('full-scale').value);
+  const realVal = parseFloat(document.getElementById('real-in').value)||0;
+  const realUnit = document.getElementById('real-unit').value;
+  const drawVal = parseFloat(document.getElementById('draw-in').value)||0;
+  const drawUnit = document.getElementById('draw-unit').value;
+
+  const realMm = toMm(realVal, realUnit);
+  const drawMm = realMm / scale;
+  document.getElementById('f-draw-mm').textContent = drawMm.toFixed(2)+' mm';
+  document.getElementById('f-draw-cm').textContent = (drawMm/10).toFixed(3)+' cm';
+  document.getElementById('f-draw-in').textContent = (drawMm/25.4).toFixed(3)+'"';
+
+  const drawInputMm = toMm(drawVal, drawUnit);
+  const realOutMm = drawInputMm * scale;
+  document.getElementById('f-real-m').textContent = (realOutMm/1000).toFixed(3)+' m';
+  document.getElementById('f-real-mm').textContent = realOutMm.toFixed(1)+' mm';
+  document.getElementById('f-real-ft').textContent = mmToFtIn(realOutMm);
+}
+
+function calcUnits() {
+  const val = parseFloat(document.getElementById('unit-val').value)||0;
+  const from = document.getElementById('unit-from').value;
+  const mm = toMm(val, from);
+  document.getElementById('u-mm').textContent = mm.toFixed(3)+' mm';
+  document.getElementById('u-cm').textContent = (mm/10).toFixed(4)+' cm';
+  document.getElementById('u-m').textContent = (mm/1000).toFixed(5)+' m';
+  document.getElementById('u-in').textContent = (mm/25.4).toFixed(4)+'"';
+  document.getElementById('u-ft').textContent = (mm/304.8).toFixed(4)+"'";
+  document.getElementById('u-ftIn').textContent = mmToFtIn(mm);
+}
+
+function drawScaleBars() {
+  const container = document.getElementById('scale-bar-vis');
+  const scales = [20,50,100,200,500];
+  const realMm = 10000;
+  const maxDrawMm = realMm/20;
+  container.innerHTML = '';
+  scales.forEach(s => {
+    const drawMm = realMm/s;
+    const pct = (drawMm/maxDrawMm)*100;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:10px;';
+    row.innerHTML = `
+      <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--text-muted);width:50px;flex-shrink:0;">1:${s}</div>
+      <div style="flex:1;height:22px;background:var(--surface2);border-radius:4px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;background:${s<=50?'var(--imp)':'var(--met)'};border-radius:4px;transition:width 0.4s;display:flex;align-items:center;padding:0 6px;">
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:#000;white-space:nowrap;">${drawMm.toFixed(1)}mm</span>
+        </div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text-dim);width:80px;flex-shrink:0;">${drawMm>=10?(drawMm/10).toFixed(1)+'cm':drawMm.toFixed(1)+'mm'}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE 5: FLOOR PLAN VISUALIZER
+// ═══════════════════════════════════════════════════════════
+// Simple floor plan: living room + kitchen + 2 bedrooms + bathroom
+// All dimensions in mm (real world)
+const rooms = [
+  {x:0,y:0,w:7000,h:5000,label:'Living Room',color:'#e8f4e8'},
+  {x:7000,y:0,w:4000,h:5000,label:'Kitchen',color:'#fff8e1'},
+  {x:0,y:5000,w:5000,h:4000,label:'Bedroom 1',color:'#e3f2fd'},
+  {x:5000,y:5000,w:3500,h:4000,label:'Bedroom 2',color:'#fce4ec'},
+  {x:8500,y:5000,w:2500,h:4000,label:'Bathroom',color:'#f3e5f5'},
+];
+const totalW = 11000, totalH = 9000; // mm
+
+function drawFloorPlan() {
+  const canvas = document.getElementById('floor-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const scale = parseInt(document.getElementById('vis-scale').value);
+  const mode = document.getElementById('vis-mode').value;
+  const cw = canvas.width, ch = canvas.height;
+
+  ctx.clearRect(0,0,cw,ch);
+
+  // Background
+  ctx.fillStyle = '#fafafa';
+  ctx.fillRect(0,0,cw,ch);
+
+  // Scale factor: mm real → px on canvas
+  const drawW = totalW/scale; // mm on paper
+  const drawH = totalH/scale;
+  const mmToPx = Math.min((cw-80)/drawW, (ch-80)/drawH); // px per mm on paper
+  const offX = (cw - drawW*mmToPx)/2;
+  const offY = (ch - drawH*mmToPx)/2;
+
+  function rx(realMm) { return offX + (realMm/scale)*mmToPx; }
+  function ry(realMm) { return offY + (realMm/scale)*mmToPx; }
+  function rw(realMm) { return (realMm/scale)*mmToPx; }
+
+  // Draw rooms
+  rooms.forEach(r => {
+    ctx.fillStyle = r.color;
+    ctx.fillRect(rx(r.x), ry(r.y), rw(r.w), rw(r.h));
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = Math.max(1, 2/mmToPx*5);
+    ctx.strokeRect(rx(r.x), ry(r.y), rw(r.w), rw(r.h));
+
+    // Label
+    const fontSize = Math.max(8, Math.min(14, rw(r.w)/5));
+    ctx.font = `${fontSize}px DM Sans, sans-serif`;
+    ctx.fillStyle = '#333';
+    ctx.textAlign = 'center';
+    ctx.fillText(r.label, rx(r.x)+rw(r.w)/2, ry(r.y)+rw(r.h)/2);
+
+    // Dimensions
+    if(rw(r.w) > 40 && rw(r.h) > 30) {
+      const dimFont = Math.max(7, Math.min(11, rw(r.w)/7));
+      ctx.font = `${dimFont}px DM Mono, monospace`;
+      ctx.fillStyle = '#777';
+      let wLabel, hLabel;
+      if(mode === 'metric') {
+        wLabel = r.w >= 1000 ? (r.w/1000).toFixed(1)+'m' : r.w+'mm';
+        hLabel = r.h >= 1000 ? (r.h/1000).toFixed(1)+'m' : r.h+'mm';
+      } else {
+        wLabel = mmToFtIn(r.w);
+        hLabel = mmToFtIn(r.h);
+      }
+      ctx.fillText(wLabel, rx(r.x)+rw(r.w)/2, ry(r.y)+rw(r.h)/2+dimFont+3);
+      ctx.fillText(hLabel, rx(r.x)+rw(r.w)/2, ry(r.y)+rw(r.h)/2+dimFont*2+5);
+    }
+  });
+
+  // Scale bar
+  const sbRealMm = scale <= 50 ? 2000 : scale <= 100 ? 5000 : 10000;
+  const sbPx = rw(sbRealMm);
+  const sbX = offX, sbY = ch - 24;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(sbX, sbY, sbPx, 6);
+  ctx.fillRect(sbX, sbY-4, 2, 14);
+  ctx.fillRect(sbX+sbPx, sbY-4, 2, 14);
+  ctx.font = '10px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#333';
+  const sbLabel = sbRealMm >= 1000 ? (sbRealMm/1000)+'m' : sbRealMm+'mm';
+  ctx.fillText(sbLabel, sbX+sbPx/2, sbY-7);
+  ctx.fillText('0', sbX, sbY-7);
+
+  // Info panel
+  const info = document.getElementById('vis-info');
+  const paperW = (totalW/scale).toFixed(1), paperH = (totalH/scale).toFixed(1);
+  info.innerHTML = `
+    <span>Scale: <strong style="color:var(--accent)">1:${scale}</strong></span>
+    <span>Drawing size: <strong>${paperW}mm × ${paperH}mm</strong></span>
+    <span>Real size: <strong>${(totalW/1000).toFixed(1)}m × ${(totalH/1000).toFixed(1)}m</strong></span>
+    <span>Paper needed: <strong>${paperW > 297 ? 'A1 or larger' : paperW > 210 ? 'A3' : 'A4'}</strong></span>
+  `;
+}
+
+function drawCompare() {
+  const canvas = document.getElementById('compare-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cw = canvas.width, ch = canvas.height;
+  ctx.clearRect(0,0,cw,ch);
+  ctx.fillStyle = '#fafafa';
+  ctx.fillRect(0,0,cw,ch);
+
+  const scales = [20,50,100,200,500];
+  const realW = 12000, realH = 8000;
+  const colors = ['#b3d9ff','#ffe0b3','#c8f5e0','#ffd6d6','#e8d5f5'];
+  let xOff = 10;
+
+  scales.forEach((s,i) => {
+    const dwPx = realW/s * 1; // 1px = 1mm on paper
+    const dhPx = realH/s * 1;
+    if(xOff+dwPx > cw-10) return;
+
+    ctx.fillStyle = colors[i];
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.fillRect(xOff, ch-dhPx-30, dwPx, dhPx);
+    ctx.strokeRect(xOff, ch-dhPx-30, dwPx, dhPx);
+
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 10px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('1:'+s, xOff+dwPx/2, ch-dhPx-34);
+    if(dwPx > 20) {
+      ctx.font = '8px DM Mono,monospace';
+      ctx.fillStyle = '#555';
+      ctx.fillText((dwPx).toFixed(0)+'mm', xOff+dwPx/2, ch-14);
+    }
+    xOff += dwPx + 16;
+  });
+
+  ctx.fillStyle = '#999'; ctx.font = '9px DM Mono,monospace'; ctx.textAlign='left';
+  ctx.fillText('12m × 8m building at different scales (1px = 1mm on paper)', 10, 14);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE 6: DRAWING BOARD
+// ═══════════════════════════════════════════════════════════
+let drawCtx, drawCanvas, drawing=false, startX=0, startY=0, lines=[];
+const GRID_MM = 10;
+
+function initDrawBoard() {
+  drawCanvas = document.getElementById('draw-canvas');
+  if(!drawCanvas) return;
+  drawCtx = drawCanvas.getContext('2d');
+  drawCanvas.onmousedown = e => { drawing=true; const r=drawCanvas.getBoundingClientRect(); startX=e.clientX-r.left; startY=e.clientY-r.top; };
+  drawCanvas.onmousemove = e => { if(!drawing) return; const r=drawCanvas.getBoundingClientRect(); redrawBoard(e.clientX-r.left,e.clientY-r.top); };
+  drawCanvas.onmouseup = e => { if(!drawing) return; drawing=false; const r=drawCanvas.getBoundingClientRect(); const ex=e.clientX-r.left,ey=e.clientY-r.top; const scale=parseInt(document.getElementById('draw-scale').value); const px=Math.hypot(ex-startX,ey-startY); const realMm=px*scale; lines.push({x1:startX,y1:startY,x2:ex,y2:ey,realMm,scale}); redrawBoard(); };
+  drawCanvas.ontouchstart = e => { e.preventDefault(); const t=e.touches[0]; const r=drawCanvas.getBoundingClientRect(); startX=t.clientX-r.left; startY=t.clientY-r.top; drawing=true; };
+  drawCanvas.ontouchmove = e => { e.preventDefault(); if(!drawing) return; const t=e.touches[0]; const r=drawCanvas.getBoundingClientRect(); redrawBoard(t.clientX-r.left,t.clientY-r.top); };
+  drawCanvas.ontouchend = e => { e.preventDefault(); drawing=false; };
+  redrawBoard();
+  updateDrawInfo();
+}
+
+function redrawBoard(curX, curY) {
+  if(!drawCtx) return;
+  const cw=drawCanvas.width, ch=drawCanvas.height;
+  drawCtx.clearRect(0,0,cw,ch);
+  drawCtx.fillStyle='#fff'; drawCtx.fillRect(0,0,cw,ch);
+
+  // Grid
+  const scale = parseInt(document.getElementById('draw-scale').value);
+  const gridSpacing = GRID_MM; // real mm
+  const gridPx = gridSpacing / scale; // not useful... use 10px grid instead
+
+  drawCtx.strokeStyle='#eee'; drawCtx.lineWidth=0.5;
+  for(let x=0;x<cw;x+=20) { drawCtx.beginPath(); drawCtx.moveTo(x,0); drawCtx.lineTo(x,ch); drawCtx.stroke(); }
+  for(let y=0;y<ch;y+=20) { drawCtx.beginPath(); drawCtx.moveTo(0,y); drawCtx.lineTo(cw,y); drawCtx.stroke(); }
+
+  // Drawn lines
+  lines.forEach(l => {
+    drawCtx.strokeStyle='#2c5aa0'; drawCtx.lineWidth=2;
+    drawCtx.beginPath(); drawCtx.moveTo(l.x1,l.y1); drawCtx.lineTo(l.x2,l.y2); drawCtx.stroke();
+    // Label
+    drawCtx.font='10px DM Mono,monospace'; drawCtx.fillStyle='#333';
+    drawCtx.textAlign='center';
+    const mx=(l.x1+l.x2)/2, my=(l.y1+l.y2)/2;
+    const realLabel = l.realMm >= 1000 ? (l.realMm/1000).toFixed(2)+'m' : l.realMm.toFixed(0)+'mm';
+    drawCtx.fillText(realLabel+' @ 1:'+l.scale, mx, my-6);
+  });
+
+  // Preview line
+  if(drawing && curX !== undefined) {
+    drawCtx.strokeStyle='rgba(240,192,64,0.7)'; drawCtx.lineWidth=1.5; drawCtx.setLineDash([4,4]);
+    drawCtx.beginPath(); drawCtx.moveTo(startX,startY); drawCtx.lineTo(curX,curY); drawCtx.stroke();
+    drawCtx.setLineDash([]);
+  }
+
+  // Scale bar top-right
+  const sbRealMm = scale*50; // 50mm on paper
+  const sbPx = 50;
+  drawCtx.fillStyle='#555'; drawCtx.fillRect(cw-70,10,sbPx,4);
+  drawCtx.font='9px DM Mono,monospace'; drawCtx.fillStyle='#555'; drawCtx.textAlign='center';
+  drawCtx.fillText((sbRealMm>=1000?(sbRealMm/1000).toFixed(1)+'m':sbRealMm+'mm'), cw-45, 8);
+}
+
+function addScaleLine() {
+  if(!drawCtx) { initDrawBoard(); }
+  const scale = parseInt(document.getElementById('draw-scale').value);
+  const realMm = parseFloat(document.getElementById('draw-len').value)||1000;
+  const px = realMm / scale;
+  const x1=40, y1=40+lines.length*40, x2=x1+Math.min(px,drawCanvas.width-80), y2=y1;
+  lines.push({x1,y1,x2,y2,realMm,scale});
+  redrawBoard();
+}
+
+function clearDrawBoard() { lines=[]; redrawBoard(); }
+
+function updateDrawInfo() {
+  const scale = parseInt(document.getElementById('draw-scale').value)||50;
+  const realMm = parseFloat(document.getElementById('draw-len').value)||1000;
+  const drawMm = realMm/scale;
+  const el = document.getElementById('draw-info');
+  if(el) el.textContent = `At 1:${scale} → ${realMm}mm real = ${drawMm.toFixed(2)}mm on paper (${(drawMm/10).toFixed(2)}cm)`;
+}
+
+function renderExercises() {
+  const exercises = [
+    {q:'A wall is 4500mm long. At 1:50, how long is it on paper?', a:'90mm', s:'4500÷50=90mm'},
+    {q:'Your drawing shows a line 75mm long at 1:100. What is the real length?', a:'7500mm = 7.5m', s:'75×100=7500mm'},
+    {q:'A room is 3.6m × 4.2m. At 1:50, what are the drawing dimensions?', a:'72mm × 84mm', s:'3600÷50=72, 4200÷50=84'},
+    {q:'Convert ¼" = 1\'-0" into a ratio (1:X). What is X?', a:'1:48', s:'1 foot = 12", so ¼" to 12" is 1:48'},
+    {q:'A site plan uses scale 1:200. A driveway is 12m long. How long is it on the drawing?', a:'60mm', s:'12000÷200=60mm'},
+  ];
+  const cont = document.getElementById('exercises');
+  if(!cont) return;
+  cont.innerHTML = exercises.map((e,i)=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;">
+      <div style="font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:600;margin-bottom:10px;">Exercise ${i+1}: ${e.q}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" onclick="toggleEx(${i})">Show Answer</button>
+      </div>
+      <div id="ex-ans-${i}" style="display:none;margin-top:12px;">
+        <div style="background:rgba(79,209,197,0.1);border:1px solid rgba(79,209,197,0.3);border-radius:8px;padding:10px 14px;">
+          <div style="color:var(--met);font-family:'DM Mono',monospace;font-weight:500;margin-bottom:4px;">Answer: ${e.a}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">Working: ${e.s}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleEx(i) {
+  const el = document.getElementById('ex-ans-'+i);
+  el.style.display = el.style.display==='none'?'block':'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE 7: QUIZ
+// ═══════════════════════════════════════════════════════════
+const quizQuestions = [
+  {
+    q: 'A room is 6 metres wide. On a 1:100 scale drawing, how wide will it be?',
+    ctx: 'Scale: 1:100. Real width: 6m = 6000mm.',
+    opts: ['6mm','60mm','600mm','6000mm'],
+    answer: 1,
+    explain: '6000mm ÷ 100 = 60mm. The drawing shows the room as 60mm wide.'
+  },
+  {
+    q: 'What does the scale notation ¼" = 1\'−0" mean?',
+    ctx: 'This is a common architectural scale used in North America.',
+    opts: [
+      'The paper is ¼ the size of the building',
+      'Every ¼ inch on the drawing equals 1 foot in real life',
+      'The building is ¼ inch tall',
+      'Every 1 inch equals ¼ foot'
+    ],
+    answer: 1,
+    explain: '¼" = 1\'-0" means ¼ inch on the drawing represents 1 foot (12 inches) in real life — a ratio of approximately 1:48.'
+  },
+  {
+    q: 'How many millimetres are in 1 foot?',
+    ctx: 'Essential unit conversion for any drafter working in Canada.',
+    opts: ['25.4mm','254mm','304.8mm','914mm'],
+    answer: 2,
+    explain: '1 foot = 12 inches × 25.4mm/inch = 304.8mm. This is a critical conversion to memorize!'
+  },
+  {
+    q: 'A line measures 45mm on a 1:50 drawing. What is the real-world length?',
+    ctx: 'Scale: 1:50. Drawing measurement: 45mm.',
+    opts: ['0.9mm','9mm','900mm','9000mm'],
+    answer: 2,
+    explain: '45mm × 50 = 2250mm. Wait — 45 × 50 = 2250mm = 2.25m. So 2250mm is correct. The closest option is 900mm... Let me recalculate: 45 × 50 = 2250mm. Answer: 2250mm = 2.25m.',
+    // Override with correct options
+    opts: ['45mm','450mm','2250mm','4500mm'],
+    answer: 2,
+    explain: '45mm × 50 = 2250mm = 2.25m. Multiply drawing size by scale factor to get real size.'
+  },
+  {
+    q: 'In CAD software like AutoCAD, you should draw objects at:',
+    ctx: 'Understanding CAD workflow and model space.',
+    opts: [
+      'The scale you want to print at',
+      'Full size (1:1, real-world dimensions)',
+      'Half size to save memory',
+      '1:100 always'
+    ],
+    answer: 1,
+    explain: 'Always draw at full size (1:1) in model space. Scaling is applied in paper space/layout viewports when printing.'
+  },
+  {
+    q: 'Which scale would you use for a detailed section drawing showing wall construction?',
+    ctx: 'Selecting the appropriate scale for the drawing type.',
+    opts: ['1:500','1:200','1:10','1:2000'],
+    answer: 2,
+    explain: '1:10 or 1:20 are typical for construction details. Larger scales show more detail. 1:500 and 1:2000 are for site/regional plans.'
+  },
+  {
+    q: 'An engineer\'s scale marked "40" means 1 inch equals how many feet?',
+    ctx: 'Reading a civil engineer\'s scale.',
+    opts: ['4 feet','40 feet','400 feet','0.4 feet'],
+    answer: 1,
+    explain: 'On a civil engineer\'s scale, the number directly gives the scale: scale "40" = 1 inch : 40 feet. Scale "20" = 1 inch : 20 feet, and so on.'
+  },
+  {
+    q: 'Why does Canada use both imperial and metric systems in construction?',
+    ctx: 'Context: Canada officially adopted metric in 1970.',
+    opts: [
+      'Canadian law requires both',
+      'Metric is only for science, not construction',
+      'The US uses imperial, so Canadian construction trades kept it for cross-border compatibility',
+      'Imperial is more accurate'
+    ],
+    answer: 2,
+    explain: 'Canada officially uses metric, but construction trades retained imperial largely due to the strong influence of the US market, existing imperial-sized building materials (2×4 lumber, etc.), and industry habits.'
+  },
+  {
+    q: 'A floor plan is drawn at 1:50. The drawing measures 180mm × 120mm. What is the real room size?',
+    ctx: 'Converting from drawing size to real size at 1:50.',
+    opts: [
+      '3.6m × 2.4m',
+      '9m × 6m',
+      '0.36m × 0.24m',
+      '18m × 12m'
+    ],
+    answer: 1,  // 9m x 6m
+    explain: '180mm × 50 = 9000mm = 9m. 120mm × 50 = 6000mm = 6m. So the room is 9m × 6m.'
+  },
+  {
+    q: 'On an architect\'s scale, what is the purpose of the subdivided section near the "0" mark?',
+    ctx: 'Reading the architect\'s scale accurately.',
+    opts: [
+      'It shows centimetres',
+      'It shows inches (subdivisions of one foot)',
+      'It shows the scale number',
+      'It shows decimals of a metre'
+    ],
+    answer: 1,
+    explain: 'The small divided segment to the left of 0 on an architect\'s scale represents inches — subdivisions of one foot. This lets you read feet AND inches from a single measurement.'
+  }
+];
+
+let quizState = { current: 0, score: 0, answered: false };
+
+function initQuiz() {
+  quizState = { current:0, score:0, answered:false };
+  document.getElementById('quiz-complete').style.display = 'none';
+  document.getElementById('quiz-container').style.display = 'block';
+  renderQuestion();
+}
+
+function restartQuiz() {
+  initQuiz();
+}
+
+function renderQuestion() {
+  const i = quizState.current;
+  if(i >= quizQuestions.length) { endQuiz(); return; }
+  const q = quizQuestions[i];
+  quizState.answered = false;
+
+  document.getElementById('quiz-q-label').textContent = `Question ${i+1} of ${quizQuestions.length}`;
+  document.getElementById('quiz-score-label').textContent = `Score: ${quizState.score}`;
+  document.getElementById('quiz-progress').style.width = (i/quizQuestions.length*100)+'%';
+
+  const letters = ['A','B','C','D'];
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = `
+    <div class="quiz-card">
+      <div class="quiz-q">${q.q}</div>
+      <div class="quiz-context">${q.ctx}</div>
+      <div class="quiz-options">
+        ${q.opts.map((o,j)=>`
+          <div class="quiz-opt" id="opt-${j}" onclick="answerQuiz(${j})">
+            <div class="opt-letter">${letters[j]}</div>
+            <div>${o}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="quiz-feedback" id="q-feedback"></div>
+      <button class="quiz-next-btn" id="q-next" onclick="nextQuestion()">
+        ${i < quizQuestions.length-1 ? 'Next Question →' : 'See Results →'}
+      </button>
+    </div>
+  `;
+}
+
+function answerQuiz(chosen) {
+  if(quizState.answered) return;
+  quizState.answered = true;
+  const q = quizQuestions[quizState.current];
+  const correct = q.answer;
+  const fb = document.getElementById('q-feedback');
+  const nextBtn = document.getElementById('q-next');
+
+  document.querySelectorAll('.quiz-opt').forEach((el,i)=>{
+    el.classList.add('disabled');
+    if(i===correct) el.classList.add('correct');
+    if(i===chosen && chosen!==correct) el.classList.add('wrong');
+  });
+
+  if(chosen===correct) {
+    quizState.score++;
+    fb.textContent = '✅ Correct! ' + q.explain;
+    fb.className = 'quiz-feedback correct show';
+    showToast('🎯 Correct! +1');
+  } else {
+    fb.textContent = '❌ Not quite. ' + q.explain;
+    fb.className = 'quiz-feedback wrong show';
+  }
+
+  document.getElementById('quiz-score-label').textContent = `Score: ${quizState.score}`;
+  nextBtn.classList.add('show');
+}
+
+function nextQuestion() {
+  quizState.current++;
+  if(quizState.current >= quizQuestions.length) endQuiz();
+  else renderQuestion();
+}
+
+function endQuiz() {
+  completeSection('quiz');
+  completed.add('quiz');
+  const pct = Math.round(quizState.score/quizQuestions.length*100);
+  document.getElementById('quiz-container').style.display='none';
+  document.getElementById('quiz-complete').style.display='block';
+  document.getElementById('quiz-progress').style.width='100%';
+  const grade = pct>=90?'Outstanding! 🏆': pct>=70?'Great work! 🎉': pct>=50?'Good effort! Keep reviewing.': 'Keep studying — you\'ve got this! 📚';
+  document.getElementById('quiz-final-score').innerHTML =
+    `You scored <strong style="color:var(--accent);font-size:1.3em;">${quizState.score}/${quizQuestions.length}</strong> (${pct}%) — ${grade}`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+updateProgressDots();
+// Draw ruler demo after load
+setTimeout(()=>{
+  drawRulerDemo();
+}, 200);
+</script>
+</body>
+</html>
